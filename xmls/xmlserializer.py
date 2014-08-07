@@ -1,0 +1,222 @@
+"""
+xmlserializer.py
+
+Serialize and deserialize python objects to xml. Currently this works only for
+objects that take no arguments in its __init__ method.
+
+>>>class PyObj(XmlSerializer):
+>>>    def __init__(self):
+>>>        self.number = 42
+
+pyobj = PyObj()
+>>>string = pyobj.serialize()
+>>>pyobj2 = PyObj()
+>>>pyobj2.deserialize(string)
+>>>pyobj2.number
+>>>42
+
+Any attribute that is in the pyobj.__dict__ is serialized. The values can be
+any python atom and objects that are serializable i.e. subclasses of
+XmlSerializer.
+
+The attribute names are used as xml tag names and must fullfill the
+following naming rules:
+
+-) names can contain letters, numbers, and other characters
+-) names cannot start with a number or punctuation character
+-) names cannot start with the letters xml (or XML, or Xml, etc)
+-) names cannot contain spaces
+
+Dictionary keys must also follow theses rules.
+The method XmlSerializer.validate uses the following regex to test any
+tag name to be xml conform, although the regex is a bit more restrictive
+
+ '^(?!xml)[A-Za-z_][A-Za-z0-9._:]*$'
+
+Only basestrings as type of dictionary keys are allowed.
+"""
+
+__author__ = 'rudolf.hoefler@gmail.com'
+__licence__ = 'LGPL'
+
+
+__all__ ('XmlSerializer')
+
+import re
+from lxml import etree
+
+
+types = {float: float.__name__,
+         int: int.__name__,
+         str: str.__name__,
+         unicode: unicode.__name__,
+         list: list.__name__,
+         tuple: tuple.__name__,
+         dict: dict.__name__,
+         bool: bool.__name__,
+         None: type(None).__name__,
+         set: set.__name__,
+         frozenset: frozenset.__name__}
+
+
+class XmlMetaSerializer(type):
+    """Metaclass to 'register' all derived child classes."""
+
+    def __init__(cls, name, bases, dct):
+
+        if len(cls.__mro__) == 2:
+            setattr(cls , "_classes", {})
+        elif len(cls.__mro__)  >= 3:
+            bases[0]._classes[name] = cls
+            return type.__init__(cls, name, bases, dct)
+
+
+class XmlSerializer(object):
+    """Parenet for all serializable objects"""
+
+
+    __metaclass__ = XmlMetaSerializer
+
+    _TYPE = 'type'
+
+
+    def __init__(self, *args, **kw):
+        super(XmlSerializer, self).__init__(*args, **kw)
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
+    def validate(self, name):
+
+        if not isinstance(name, basestring):
+            raise TypeError('tag names must be string not %s' %type(name))
+
+        if re.match('^(?!xml)[A-Za-z_][A-Za-z0-9._:]*$', name) is None:
+            raise ValueError('%s is not a valid xml name' %name)
+
+    def _toText(self, value):
+
+        if isinstance(value, (list, tuple, set, frozenset)):
+            return " ".join([str(v) for v in value])
+        elif isinstance(value, bool):
+            # booleans to lower case to be xml conform
+            return str(value).lower()
+        else:
+            return str(value)
+
+    def _dict2etree(self, tag, dict_):
+        element = etree.Element(tag)
+        element.attrib[self._TYPE] = type(dict_).__name__
+        for key, value in dict_.iteritems():
+            self.validate(key)
+            if isinstance(value, dict):
+                element.append(self._dict2etree(key, value))
+            else:
+                child = etree.SubElement(element, key)
+                child.attrib[self._TYPE] = type(value).__name__
+                child.text = self._toText(value)
+        return element
+
+    def to_xml(self, name=None):
+        if name is None:
+            name = self.__class__.__name__
+
+        root = etree.Element(name)
+        root.attrib['type'] = type(self).__name__
+
+        for key, value in self.__dict__.iteritems():
+            self.validate(key)
+
+            if isinstance(value, dict):
+                root.append(self._dict2etree(key, value))
+            elif value.__class__.__name__ in self._classes:
+                root.append(value.to_xml(key))
+            else:
+                child = etree.SubElement(root, key)
+                child.attrib[self._TYPE] = type(value).__name__
+                child.text = self._toText(value)
+
+        return root
+
+    def serialize(self):
+        root = self.to_xml()
+        return etree.tostring(root, pretty_print=True)
+
+    def deserialize(self, root):
+        if isinstance(root, basestring):
+            root = etree.fromstring(root)
+
+        for child in root.getchildren():
+            self.__dict__[child.tag] = self._to_attr(child)
+
+    def _to_attr(self, element):
+        _type = element.attrib[self._TYPE]
+        if _type in (types[int], types[float]):
+            return eval(element.text)
+        elif _type == types[bool]:
+            return eval(element.text.title())
+        elif _type in (types[str], types[unicode]):
+            return element.text
+        elif _type == types[list]:
+            return [eval(v) for v in element.text.split()]
+        elif _type == types[tuple]:
+            return tuple([eval(v) for v in element.text.split()])
+        elif _type == types[set]:
+            return set([eval(v) for v in element.text.split()])
+        elif _type == types[frozenset]:
+            return frozenset([eval(v) for v in element.text.split()])
+        elif _type == types[dict]:
+            return self._etree2dict(element)
+        elif _type in self._classes:
+            inst = self._classes[_type]()
+            inst.deserialize(element)
+            return inst
+        elif _type == types[None]:
+            return None
+        else:
+            raise RuntimeError('cannot deserialize %s' %_type)
+
+    def _etree2dict(self, element):
+        edict = {}
+        for child in element.getchildren():
+            edict[child.tag] = self._to_attr(child)
+        return edict
+
+
+
+if __name__ == '__main__':
+
+
+    class Testi(XmlSerializer):
+
+        def __init__(self, *args, **kw):
+            super(Testi, self).__init__(*args, **kw)
+            self.dict = {'foo': 'bar'}
+
+    class Test(XmlSerializer):
+
+        def __init__(self, *args, **kw):
+            super(Test, self).__init__(*args, **kw)
+
+            self.boolean = True
+            self.none = None
+            self.foo = 3.14
+            self.n = 42
+            self.set = set([1,2,3])
+            self.frozenset = frozenset([1,2,4])
+            self.liste = [1, 3, 5]
+            self.tuple = (1, 2, 3)
+            self.bar = {'foo': 'bar',
+                        'bar': 'baz',
+                        'baz': {'fooobar':1}}
+            self.inst = Testi()
+
+
+test = Test()
+print test.serialize()
+
+test2 = Test()
+test2.deserialize(test.serialize())
+
+
+import pdb; pdb.set_trace()
