@@ -40,7 +40,7 @@ __author__ = 'rudolf.hoefler@gmail.com'
 __licence__ = 'LGPL'
 
 
-__all__ ('XmlSerializer')
+__all__ = ('XmlSerializer', )
 
 import re
 from lxml import etree
@@ -48,7 +48,9 @@ from lxml import etree
 
 types = {float: float.__name__,
          int: int.__name__,
+         long: long.__name__,
          str: str.__name__,
+         complex: complex.__name__,
          unicode: unicode.__name__,
          list: list.__name__,
          tuple: tuple.__name__,
@@ -151,7 +153,7 @@ class XmlSerializer(object):
 
     def _to_attr(self, element):
         _type = element.attrib[self._TYPE]
-        if _type in (types[int], types[float]):
+        if _type in (types[int], types[float], types[long], types[complex]):
             return eval(element.text)
         elif _type == types[bool]:
             return eval(element.text.title())
@@ -181,42 +183,3 @@ class XmlSerializer(object):
         for child in element.getchildren():
             edict[child.tag] = self._to_attr(child)
         return edict
-
-
-
-if __name__ == '__main__':
-
-
-    class Testi(XmlSerializer):
-
-        def __init__(self, *args, **kw):
-            super(Testi, self).__init__(*args, **kw)
-            self.dict = {'foo': 'bar'}
-
-    class Test(XmlSerializer):
-
-        def __init__(self, *args, **kw):
-            super(Test, self).__init__(*args, **kw)
-
-            self.boolean = True
-            self.none = None
-            self.foo = 3.14
-            self.n = 42
-            self.set = set([1,2,3])
-            self.frozenset = frozenset([1,2,4])
-            self.liste = [1, 3, 5]
-            self.tuple = (1, 2, 3)
-            self.bar = {'foo': 'bar',
-                        'bar': 'baz',
-                        'baz': {'fooobar':1}}
-            self.inst = Testi()
-
-
-test = Test()
-print test.serialize()
-
-test2 = Test()
-test2.deserialize(test.serialize())
-
-
-import pdb; pdb.set_trace()
