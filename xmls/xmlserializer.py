@@ -10,10 +10,11 @@ objects that take no arguments in its __init__ method.
 
 pyobj = PyObj()
 >>>string = pyobj.serialize()
->>>pyobj2 = PyObj()
->>>pyobj2.deserialize(string)
+>>>pyobj2 = XmlSerializer.deserialize(string)
 >>>pyobj2.number
 >>>42
+>>>pyobj == pyobj2
+>>>True
 
 Any attribute that is in the pyobj.__dict__ is serialized. The values can be
 any python atom and objects that are serializable i.e. subclasses of
@@ -27,8 +28,8 @@ following naming rules:
 -) names cannot start with the letters xml (or XML, or Xml, etc)
 -) names cannot contain spaces
 
-Dictionary keys must also follow theses rules.
-The method XmlSerializer.validate uses the following regex to test any
+Dictionary keys must also follow these rules.
+The method XmlSerializer._validate uses the following regex to test any
 tag name to be xml conform, although the regex is a bit more restrictive
 
  '^(?!xml)[A-Za-z_][A-Za-z0-9._:]*$'
@@ -76,19 +77,16 @@ class XmlMetaSerializer(type):
 class XmlSerializer(object):
     """Parenet for all serializable objects"""
 
-
     __metaclass__ = XmlMetaSerializer
-
     _TYPE = 'type'
 
-
     def __init__(self, *args, **kw):
-        super(XmlSerializer, self).__init__(*args, **kw)
+        super(XmlSerializer, self).__init__()
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def validate(self, name):
+    def _validate(self, name):
 
         if not isinstance(name, basestring):
             raise TypeError('tag names must be string not %s' %type(name))
@@ -110,7 +108,7 @@ class XmlSerializer(object):
         element = etree.Element(tag)
         element.attrib[self._TYPE] = type(dict_).__name__
         for key, value in dict_.iteritems():
-            self.validate(key)
+            self._validate(key)
             if isinstance(value, dict):
                 element.append(self._dict2etree(key, value))
             else:
@@ -127,7 +125,7 @@ class XmlSerializer(object):
         root.attrib['type'] = type(self).__name__
 
         for key, value in self.__dict__.iteritems():
-            self.validate(key)
+            self._validate(key)
 
             if isinstance(value, dict):
                 root.append(self._dict2etree(key, value))
@@ -140,11 +138,18 @@ class XmlSerializer(object):
 
         return root
 
-    def serialize(self):
+    def serialize(self, pretty_print=True):
         root = self.to_xml()
-        return etree.tostring(root, pretty_print=True)
+        return etree.tostring(root, pretty_print=pretty_print)
 
-    def deserialize(self, root):
+    @classmethod
+    def deserialize(cls, string):
+        root = etree.fromstring(string)
+        obj = cls._classes[root.tag]()
+        obj.load(string)
+        return obj
+
+    def load(self, root):
         if isinstance(root, basestring):
             root = etree.fromstring(root)
 
@@ -171,7 +176,7 @@ class XmlSerializer(object):
             return self._etree2dict(element)
         elif _type in self._classes:
             inst = self._classes[_type]()
-            inst.deserialize(element)
+            inst.load(element)
             return inst
         elif _type == types[None]:
             return None
@@ -183,3 +188,5 @@ class XmlSerializer(object):
         for child in element.getchildren():
             edict[child.tag] = self._to_attr(child)
         return edict
+
+

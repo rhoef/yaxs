@@ -17,11 +17,10 @@ from xmls import XmlSerializer
 class TestTypes(unittest.TestCase):
 
     @staticmethod
-    def serialize_deserialize(pyobj, Class):
-        string = pyobj.serialize()
-        pyobj2 = Class()
-        pyobj2.deserialize(string)
-        return pyobj2
+    def serialize_deserialize(obj):
+        string = obj.serialize()
+        obj2 = XmlSerializer.deserialize(string)
+        return obj2
 
     def test_boolean(self):
 
@@ -31,7 +30,7 @@ class TestTypes(unittest.TestCase):
                 self.value = True
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
     def test_int(self):
 
@@ -41,7 +40,17 @@ class TestTypes(unittest.TestCase):
                 self.value = 42
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
+
+    def test_long(self):
+
+        class PyObj(XmlSerializer):
+            def __init__(self, *args, **kw):
+                super(PyObj, self).__init__(*args, **kw)
+                self.value = long(42)
+
+        pyobj = PyObj()
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
     def test_float(self):
 
@@ -51,7 +60,7 @@ class TestTypes(unittest.TestCase):
                 self.value = True
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
     def test_None(self):
 
@@ -62,7 +71,7 @@ class TestTypes(unittest.TestCase):
                 self.value = None
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
     def test_set(self):
 
@@ -72,7 +81,7 @@ class TestTypes(unittest.TestCase):
                 self.value = set([1, 2, 3])
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
     def test_frozenset(self):
 
@@ -82,7 +91,7 @@ class TestTypes(unittest.TestCase):
                 self.value = frozenset([1, 2, 3])
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
     def test_tuple(self):
 
@@ -92,7 +101,7 @@ class TestTypes(unittest.TestCase):
                 self.value = tuple([1, 2, 3])
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
     def test_list(self):
 
@@ -102,7 +111,7 @@ class TestTypes(unittest.TestCase):
                 self.value = list([1, 2 ,3])
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
     def test_dict(self):
 
@@ -114,7 +123,7 @@ class TestTypes(unittest.TestCase):
                               'dictionary': {'number': 1}}
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
 
     def test_pyobject(self):
@@ -131,7 +140,7 @@ class TestTypes(unittest.TestCase):
                 self.value = SubPyObj()
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
 
     def test_complex(self):
@@ -142,7 +151,7 @@ class TestTypes(unittest.TestCase):
                 self.value = 1*1.5j
 
         pyobj = PyObj()
-        self.assertEqual(pyobj, self.serialize_deserialize(pyobj, PyObj))
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
 
 if __name__ == '__main__':
