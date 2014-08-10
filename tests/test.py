@@ -11,7 +11,7 @@ __copyright__ = 'LGPL'
 __all__ = ('TestSerialisation', )
 
 import unittest
-from xmls import XmlSerializer
+from yaxs import XmlSerializer
 
 
 class TestTypes(unittest.TestCase):
