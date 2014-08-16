@@ -11,6 +11,8 @@ __copyright__ = 'LGPL'
 __all__ = ('TestSerialisation', )
 
 import unittest
+
+from collections import OrderedDict
 from yaxs import XmlSerializer
 
 
@@ -152,6 +154,21 @@ class TestTypes(unittest.TestCase):
 
         pyobj = PyObj()
         self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
+
+    def test_ordereddict(self):
+
+        class PyObj(XmlSerializer):
+            def __init__(self, *args, **kw):
+                super(PyObj, self).__init__(*args, **kw)
+                self.value = OrderedDict()
+                self.value['integer'] = 1
+                self.value['float'] = 3.14
+                self.value['dictionary'] = {'number': 1}
+
+        pyobj = PyObj()
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
+
+
 
 
 if __name__ == '__main__':
