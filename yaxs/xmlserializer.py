@@ -43,8 +43,10 @@ __licence__ = 'LGPL'
 
 __all__ = ('XmlSerializer', )
 
+
 import re
 from lxml import etree
+from collections import OrderedDict
 
 
 types = {float: float.__name__,
@@ -56,10 +58,17 @@ types = {float: float.__name__,
          list: list.__name__,
          tuple: tuple.__name__,
          dict: dict.__name__,
+         OrderedDict: OrderedDict.__name__,
          bool: bool.__name__,
          None: type(None).__name__,
          set: set.__name__,
          frozenset: frozenset.__name__}
+
+def key2tag(key):
+    return "__%s" %key
+
+def tag2key(tag):
+    return tag[2:]
 
 
 class XmlMetaSerializer(type):
@@ -107,7 +116,8 @@ class XmlSerializer(object):
     def _dict2etree(self, tag, dict_):
         element = etree.Element(tag)
         element.attrib[self._TYPE] = type(dict_).__name__
-        for key, value in dict_.iteritems():
+        for key_, value in dict_.iteritems():
+            key =  key2tag(key_)
             self._validate(key)
             if isinstance(value, dict):
                 element.append(self._dict2etree(key, value))
@@ -156,6 +166,12 @@ class XmlSerializer(object):
         for child in root.getchildren():
             self.__dict__[child.tag] = self._to_attr(child)
 
+    def _to_seq(self, string):
+        try:
+            return [eval(v) for v in string.split()]
+        except NameError:
+            return [v for v in string.split()]
+
     def _to_attr(self, element):
         _type = element.attrib[self._TYPE]
         if _type in (types[int], types[float], types[long], types[complex]):
@@ -165,14 +181,14 @@ class XmlSerializer(object):
         elif _type in (types[str], types[unicode]):
             return element.text
         elif _type == types[list]:
-            return [eval(v) for v in element.text.split()]
+            return self._to_seq(element.text)
         elif _type == types[tuple]:
-            return tuple([eval(v) for v in element.text.split()])
+            return tuple(self._to_seq(element.text))
         elif _type == types[set]:
-            return set([eval(v) for v in element.text.split()])
+            return set(self._to_seq(element.text))
         elif _type == types[frozenset]:
-            return frozenset([eval(v) for v in element.text.split()])
-        elif _type == types[dict]:
+            return frozenset(self._to_seq(element.text))
+        elif _type in (types[dict], types[OrderedDict]):
             return self._etree2dict(element)
         elif _type in self._classes:
             inst = self._classes[_type]()
@@ -186,7 +202,5 @@ class XmlSerializer(object):
     def _etree2dict(self, element):
         edict = {}
         for child in element.getchildren():
-            edict[child.tag] = self._to_attr(child)
+            edict[tag2key(child.tag)] = self._to_attr(child)
         return edict
-
-
