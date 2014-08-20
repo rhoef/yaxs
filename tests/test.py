@@ -24,6 +24,26 @@ class TestTypes(unittest.TestCase):
         obj2 = XmlSerializer.deserialize(string)
         return obj2
 
+    def test_str(self):
+
+        class PyObj(XmlSerializer):
+            def __init__(self, *args, **kw):
+                super(PyObj, self).__init__(*args, **kw)
+                self.value = str("string")
+
+        pyobj = PyObj()
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
+
+    def test_unicode(self):
+
+        class PyObj(XmlSerializer):
+            def __init__(self, *args, **kw):
+                super(PyObj, self).__init__(*args, **kw)
+                self.value = unicode('unicode')
+
+        pyobj = PyObj()
+        self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
+
     def test_boolean(self):
 
         class PyObj(XmlSerializer):
