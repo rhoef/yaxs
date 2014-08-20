@@ -126,7 +126,10 @@ class XmlSerializer(object):
             return str(value)
 
     def _from_seq(self, sequence):
-        stype = type(sequence[0]).__name__
+        if isinstance(sequence, (set, frozenset)):
+            stype = type(list(sequence)[0]).__name__
+        else:
+            stype = type(sequence[0]).__name__
         txt = " ".join([str(item) for item in sequence])
         return txt, stype
 
