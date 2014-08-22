@@ -8,7 +8,7 @@ out there (and much more sophisticated ones).
 One goal was to have a human readable output which can be easily reverse engineered the others.
 
 Currently, yaxs works only for objects that take no arguments in its ```__init__``` method. 
-It is implemented as factory pattern, where each subclass of ```XmlSerializer`` is a product. 
+It is implemented as factory pattern, where each subclass of ```XmlSerializer`` is a product of the factory.
 
 How it works:
 -------------
@@ -39,12 +39,15 @@ following naming rules:
 -  names cannot start with the letters xml (or XML, or Xml, etc)
 -  names cannot contain spaces
 
-Dictionary keys must also follow these rules.
+Dictionary keys must also follow these rules. Since keys can be any type 
+the are converted to strings and mangeled with a `key_` prefix.
 The method XmlSerializer._validate uses the following regex to test any
 tag name to be xml conform, although the regex is a bit more restrictive
 ```
  '^(?!xml)[A-Za-z_][A-Za-z0-9._:]*$'
 ```
+Lists and tuples can contain only python atoms, and all items must be of the same type.
+
 Only basestrings as type of dictionary keys are allowed.
 
 Tests
