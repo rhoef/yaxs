@@ -34,10 +34,10 @@ XmlSerializer.
 The attribute names are used as xml tag names and must fullfill the
 following naming rules:
 
--) names can contain letters, numbers, and other characters
--) names cannot start with a number or punctuation character
--) names cannot start with the letters xml (or XML, or Xml, etc)
--) names cannot contain spaces
+-  names can contain letters, numbers, and other characters
+-  names cannot start with a number or punctuation character
+-  names cannot start with the letters xml (or XML, or Xml, etc)
+-  names cannot contain spaces
 
 Dictionary keys must also follow these rules.
 The method XmlSerializer._validate uses the following regex to test any
