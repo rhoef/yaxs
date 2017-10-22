@@ -189,7 +189,5 @@ class TestTypes(unittest.TestCase):
         self.assertEqual(pyobj, self.serialize_deserialize(pyobj))
 
 
-
-
 if __name__ == '__main__':
     unittest.main()
