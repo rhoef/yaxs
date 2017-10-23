@@ -6,6 +6,7 @@ Yet another xml serializer.
 
 [![Build Status](https://travis-ci.org/rhoef/yaxs.svg?branch=master)](https://travis-ci.org/rhoef/yaxs)
 
+[![Coverage Status](https://coveralls.io/repos/github/rhoef/yaxs/badge.svg?branch=master)](https://coveralls.io/github/rhoef/yaxs?branch=master)
 
 Yaxs is not really a serious project since there are already a plenty of serializers
 out there (and much more sophisticated ones).
